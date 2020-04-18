@@ -1,7 +1,7 @@
 {
-  "name": "whatsapp-web-reveng",
-  "version": "1.0.0",
-  "description": "A graphical, web-based client for WhatsApp Web, using the reverse engineered Python code as backend.",
+  "name": "whatify",
+  "version": "0.0.1",
+  "description": "An application which makes it possible to manage spotify via whatsapp.",
   "main": "index.js",
   "scripts": {
     "test": "concurrently --kill-others \"node index.js\" \"./backend/whatsapp-web-backend.py\"",
