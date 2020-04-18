@@ -20,6 +20,7 @@ from Crypto.Hash import SHA256;
 import hashlib;
 import hmac;
 import traceback;
+import collections
 
 import websocket;
 import curve25519;
@@ -141,6 +142,7 @@ class WhatsAppWebClient:
     def onMessage(self, ws, message):
         try:
             messageSplit = message.split(",", 1);
+            if len(messageSplit) < 2: return
             messageTag = messageSplit[0];
             messageContent = messageSplit[1];
             
@@ -224,8 +226,6 @@ class WhatsAppWebClient:
         except:
             eprint(traceback.format_exc());
 
-
-
     def connect(self):
         self.activeWs = websocket.WebSocketApp("wss://web.whatsapp.com/ws",
                                                on_message = lambda ws, message: self.onMessage(ws, message),
@@ -285,3 +285,13 @@ class WhatsAppWebClient:
         self.activeWs.send('goodbye,,["admin","Conn","disconnect"]');		# WhatsApp server closes connection automatically when client wants to disconnect
         #time.sleep(0.5);
         #self.activeWs.close();
+
+    # def handleTextMessage(self, data)
+    #     try:
+    #         message = eprint(processedData[2][0]["message"]["conversation"]);
+    #         words = message.split();
+    #         for word in words:
+    #             if word.startswith("https://open.spotify.com/track")
+
+    #     except:
+    #         pass

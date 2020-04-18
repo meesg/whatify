@@ -69,3 +69,5 @@ doc/spec/protobuf-extractor/node_modules
 .iml
 # direnv environment
 .envrc
+
+config.json

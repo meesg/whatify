@@ -5,9 +5,18 @@ let {StringDecoder} = require("string_decoder");
 let express = require("express");
 let WebSocket = require("ws");
 let app = express();
+const superagent = require('superagent');
 
 let {WebSocketClient} = require("./client/js/WebSocketClient.js");
 let {BootstrapStep}   = require("./client/js/BootstrapStep.js");
+
+const config = require('./config');
+
+// Spotify auth
+const base64Auth = Buffer.from(config.spotifyClientId + ':' + config.spotifySecretKey).toString('base64');
+const redirect_uri = "http://localhost:2018/spotify/callback";
+let access_token;
+let refresh_token;
 
 
 
@@ -125,89 +134,76 @@ wss.on("connection", function(clientWebsocketRaw, req) {
                 keepWhenHit: true
             }).then(whatsAppMessage => {
                 let d = whatsAppMessage.data;
+
+                try {
+                    let url = d.message[2][0]["message"]["extendedTextMessage"]["canonicalUrl"];
+                    console.log(url);
+                    if (url.startsWith('https://open.spotify.com/track')) 
+                    {
+                        superagent
+                            .post('https://api.spotify.com/v1/me/player/queue')
+                            .type('form')
+                            .accept('json')
+                            .set('Authorization', 'Bearer ' + access_token)
+                            .query({ uri: url })
+                            .then(res => {
+                                console.log(res.status);
+                             })
+                             .catch(err => {
+                                console.log(err.status);
+                             });
+                    }
+                }
+                catch {
+
+                }
+
                 clientWebsocket.send({ type: "whatsapp_message_received", message: d.message, message_type: d.message_type, timestamp: d.timestamp });
             }).run();
         }).catch(reason => {
             clientCallRequest.respond({ type: "error", reason: reason });
         })
     }).run();
-
-
-    //TODO:
-    // - designated backend call function to make everything shorter
-    // - allow client to call "backend-getLoginInfo" and "backend-getConnectionInfo"
-    // - add buttons for that to client
-    // - look for handlers in "decoder.py" and add them to output information
-    // - when decoding fails, write packet to file for further investigation later
-
-
-
-    /*let send = (obj, tag) => {
-        let msgTag = tag==undefined ? (+new Date()) : tag;
-        if(obj.from == undefined)
-            obj.from = "api";
-        clientWebsocket.send(`${msgTag},${JSON.stringify(obj)}`);
-    };
-
-    send({ type: "connected" });*/
-    /*let backendCall = command => {
-        if(!waBackendValid) {
-            send({ type: "error", msg: "No backend connected." });
-            return;
-        }
-        waBackend.onmessage = msg => {
-            let data = JSON.parse(msg.data);
-            if(data.status == 200)
-                send(data);
-        };
-        waBackend.send(command);
-    };*/
-
-    /*clientWebsocket.on("message", function(msg) {
-        let tag = msg.split(",")[0];
-        let obj = JSON.parse(msg.substr(tag.length + 1));
-
-        switch(obj.command) {
-            case "api-connectBackend": {*/
-                
-
-                //backendWebsocket = new WebSocketClient("ws://localhost:2020", true);
-                //backendWebsocket.onClose
-
-                /*waBackend = new WebSocket("ws://localhost:2020", { perMessageDeflate: false });
-                waBackend.onclose = () => {
-                    waBackendValid = false;
-                    waBackend = undefined;
-                    send({ type: "resource_gone", resource: "backend" });
-                };
-                waBackend.onopen = () => {
-                    waBackendValid = true;
-                    send({ type: "resource_connected", resource: "backend" }, tag);
-                };*/
-                //break;
-            //}
-
-            /*case "backend-connectWhatsApp":
-            case "backend-generateQRCode": {
-                backendCall(msg);
-                break;
-            }*/
-    //	}
-    //});
-
-    //clientWebsocket.on("close", function() {
-        /*if(waBackend != undefined) {
-            waBackend.onclose = () => {};
-            waBackend.close();
-            waBackend = undefined;
-        }*/
-    //});
 })
 
 
 
 
 app.use(express.static("client"));
+
+app.get('/', function(req, res) {
+    var scopes = 'user-read-playback-state user-modify-playback-state user-read-currently-playing streaming app-remote-control';
+    res.redirect('https://accounts.spotify.com/authorize' +
+        '?response_type=code' +
+        '&client_id=' + config.spotifyClientId +
+        (scopes ? '&scope=' + encodeURIComponent(scopes) : '') +
+        '&redirect_uri=' + encodeURIComponent(redirect_uri));
+});
+
+app.get("/spotify/callback", function(req, res) {
+    const code = req.query.code;
+
+    superagent
+        .post('https://accounts.spotify.com/api/token')
+        .type('form')
+        .accept('json')
+        .set('Authorization', 'Basic ' + base64Auth)
+        .send({ grant_type: 'authorization_code'})
+        .send({ code: code})
+        .send({ redirect_uri: redirect_uri})
+        .end((err, res) => {
+            if (err) {
+                res.end(`<p>Something went wrong, <a href="/">please retry</a>.</p>`);
+            }
+
+            access_token = res.body["access_token"];
+            refresh_token = res.body["refresh_token"];
+            console.log(res.body);
+        });
+
+    res.redirect("/client.html");
+});
+    
 
 app.listen(2018, function() {
     console.log("whatsapp-web-reveng HTTP server listening on port 2018");
