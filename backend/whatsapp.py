@@ -133,6 +133,11 @@ class WhatsAppWebClient:
             self.onCloseCallback["func"](self.onCloseCallback);
         eprint("WhatsApp backend Websocket closed.");
 
+    def keepAlive(self):
+        if self.activeWs is not None:
+            self.activeWs.send("?,,")
+            Timer(20.0, self.keepAlive).start()
+
     def onMessage(self, ws, message):
         try:
             messageSplit = message.split(",", 1);
@@ -176,13 +181,15 @@ class WhatsAppWebClient:
                             processedData = { "traceback": traceback.format_exc().splitlines() };
                             messageType = "error";
                         finally:
+                            # self.handleTextMessage(processedData);
+
                             self.onMessageCallback["func"](processedData, self.onMessageCallback, { "message_type": messageType });
                 else:
                     self.onMessageCallback["func"](jsonObj, self.onMessageCallback, { "message_type": "json" });
                     if isinstance(jsonObj, list) and len(jsonObj) > 0:					# check if the result is an array
                         eprint(json.dumps(jsonObj));
                         if jsonObj[0] == "Conn":
-                            Timer(25, lambda: self.activeWs.send('?,,')).start() # Keepalive Request
+                            Timer(20.0, self.keepAlive).start()                         # Start keepalive request loop
                             self.connInfo["clientToken"] = jsonObj[1]["clientToken"];
                             self.connInfo["serverToken"] = jsonObj[1]["serverToken"];
                             self.connInfo["browserToken"] = jsonObj[1]["browserToken"];
