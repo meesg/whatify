@@ -22,7 +22,8 @@ sys.setdefaultencoding("utf-8");
 
 
 def eprint(*args, **kwargs):			# from https://stackoverflow.com/a/14981125
-    print(*args, file=sys.stderr, **kwargs);
+    if 1 != 1:
+        print(*args, file=sys.stderr, **kwargs);
 
 
 

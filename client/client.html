@@ -20,7 +20,8 @@
         <script type="text/javascript" src="lib/lodash/js/lodash.min.js"></script>
         <script type="text/javascript" src="lib/jquery/js/jquery-3.2.1.min.js"></script>
         <script type="text/javascript" src="lib/jquery-colResizable/js/jquery-colResizable-1.6.min.js"></script>
-        <script type="text/javascript" src="lib/bootstrap/js/bootstrap-3.3.7.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+        <script type="text/javascript" src="lib/bootstrap/js/bootstrap.min.js"></script>
         <script type="text/javascript" src="lib/bootstrap/js/bootbox-4.4.0.min.js"></script>
         <script type="text/javascript" src="lib/jsonTree/jsonTree.js"></script>
         <script type="text/javascript" src="lib/moment/js/moment-2.20.1.min.js"></script>
@@ -44,17 +45,13 @@
                 <button id="button-disconnect" class="btn">Disconnect</button>
             </div>
             <div id="main-container-content">
-                <table id="messages-list-table" class="table table-hover">
-                    <thead class="thead">
-                        <tr>
-                            <th scope="col">#</th>
-                            <th scope="col">Timestamp</th>
-                            <th scope="col">Type</th>
-                            <th scope="col" class="fill">JSON data</th>
-                        </tr>
-                    </thead>
-                    <tbody id="messages-list-table-body"></tbody>
-                </table>
+                <div class="btn-group">
+                    <button class="btn btn-secondary btn-lg dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        Select chat
+                    </button>
+                    <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                    </div>
+                </div>
             </div>
         </div>
 

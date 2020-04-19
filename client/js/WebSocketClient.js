@@ -24,7 +24,7 @@ class WebSocketClient {
             let actualMsg = this.constructorConfig.getOnMessageData ? this.constructorConfig.getOnMessageData(msg) : msg;
             let tag = actualMsg.split(",")[0];
             let obj = JSON.parse(actualMsg.substr(tag.length + 1));
-            console.log("got message ", obj);
+            //console.log("got message ", obj);
 
             let idx = this.expectedMsgs.findIndex(e => e.condition(obj, tag));
             if(idx != -1) {

@@ -12,13 +12,16 @@ let {BootstrapStep}   = require("./client/js/BootstrapStep.js");
 
 const config = require('./config');
 
+let currentChatJid;
+
 // Spotify auth
 const base64Auth = Buffer.from(config.spotifyClientId + ':' + config.spotifySecretKey).toString('base64');
 const redirect_uri = "http://localhost:2018/spotify/callback";
 let access_token;
 let refresh_token;
 
-
+let whatsappJids = {};
+let whatsappChats = [];
 
 let wss = new WebSocket.Server({ port: 2019 });
 console.log("whatsapp-web-reveng API server listening on port 2019");
@@ -134,28 +137,52 @@ wss.on("connection", function(clientWebsocketRaw, req) {
                 keepWhenHit: true
             }).then(whatsAppMessage => {
                 let d = whatsAppMessage.data;
+                
+                // find chats
+                try {
+                    if (d.message[1]["type"] == "chat") {
+                        d.message[2].forEach(e => {
+                            whatsappChats.push({name: e[1].name, jid: e[1].jid, lastInteraction: e[1].t});
+                            whatsappJids[e[1].name] = e[1].jid;
+                        });
+                        whatsappChats.sort((a, b) => (a.lastInteraction < b.lastInteraction) ? 1 : -1);
+                        if (whatsappChats.length > 25) whatsappChats = whatsappChats.slice(0, 24);
+                        clientWebsocket.send({ type: "whatsapp_chats", message: whatsappChats, message_type: d.message_type, timestamp: d.timestamp });
+
+                        clientWebsocket.waitForMessage({
+                            condition: obj => obj.type == "chat_select",
+                            keepWhenHit: true
+                        }).then(message => {
+                            currentChatJid = whatsappJids[message.data.message];
+                        }).run();
+                    }
+                } catch (err) {
+                    //console.log(err.message);
+                }
 
                 try {
-                    let url = d.message[2][0]["message"]["extendedTextMessage"]["canonicalUrl"];
-                    console.log(url);
-                    if (url.startsWith('https://open.spotify.com/track')) 
-                    {
-                        superagent
-                            .post('https://api.spotify.com/v1/me/player/queue')
-                            .type('form')
-                            .accept('json')
-                            .set('Authorization', 'Bearer ' + access_token)
-                            .query({ uri: url })
-                            .then(res => {
-                                console.log(res.status);
-                             })
-                             .catch(err => {
-                                console.log(err.status);
-                             });
+                    if (d.message[2][0]["key"]["remoteJid"] == currentChatJid) {
+                        let url = d.message[2][0]["message"]["extendedTextMessage"]["canonicalUrl"];
+                        console.log(url);
+                        if (url.startsWith('https://open.spotify.com/track')) 
+                        {
+                            superagent
+                                .post('https://api.spotify.com/v1/me/player/queue')
+                                .type('form')
+                                .accept('json')
+                                .set('Authorization', 'Bearer ' + access_token)
+                                .query({ uri: url })
+                                .then(res => {
+                                    console.log("Song queued!");
+                                 })
+                                 .catch(err => {
+                                    console.log(err.status);
+                                 });
+                        }
                     }
                 }
-                catch {
-
+                catch (err) {
+                    //console.log(err.message);
                 }
 
                 clientWebsocket.send({ type: "whatsapp_message_received", message: d.message, message_type: d.message_type, timestamp: d.timestamp });
@@ -166,10 +193,12 @@ wss.on("connection", function(clientWebsocketRaw, req) {
     }).run();
 })
 
-
-
-
 app.use(express.static("client"));
+
+app.get("/client", function(req, res) {
+    if (typeof access_token !== 'undefined') res.redirect("/");
+    res.sendFile(path.join(__dirname + '/client/client.html'));
+});
 
 app.get('/', function(req, res) {
     var scopes = 'user-read-playback-state user-modify-playback-state user-read-currently-playing streaming app-remote-control';
@@ -201,7 +230,7 @@ app.get("/spotify/callback", function(req, res) {
             console.log(res.body);
         });
 
-    res.redirect("/client.html");
+    res.redirect("/client");
 });
     
 
