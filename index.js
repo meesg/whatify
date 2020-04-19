@@ -153,6 +153,42 @@ wss.on("connection", function(clientWebsocketRaw, req) {
                     //console.log(err.message);
                 }
 
+                // find commands
+                try {
+                    if (d.message[2][0]["key"]["remoteJid"] == currentChatJid) {
+                        let message = d.message[2][0]["message"]["conversation"];
+                        let words = message.split(' ');
+
+                        if (words[0] == "!skip") {
+                            superagent
+                                .post('https://api.spotify.com/v1/me/player/next')
+                                .accept('json')
+                                .set('Authorization', 'Bearer ' + access_token)
+                                .then(res => {
+                                    console.log("Song skipped!");
+                                })
+                                .catch(err => {
+                                    console.log(err.status);
+                                });
+                        } else if (words[0] == "!vol") {
+                            superagent
+                                .put('https://api.spotify.com/v1/me/player/volume')
+                                .accept('json')
+                                .set('Authorization', 'Bearer ' + access_token)
+                                .query({volume_percent:words[1]})
+                                .then(res => {
+                                    console.log("Volume changed!");
+                                })
+                                .catch(err => {
+                                    console.log(err.message);
+                                });
+                        }
+                    }
+                } catch (err) {
+                    //console.log(err.message);
+                }
+
+                // find songs
                 try {
                     if (d.message[2][0]["key"]["remoteJid"] == currentChatJid) {
                         let url = d.message[2][0]["message"]["extendedTextMessage"]["canonicalUrl"];
