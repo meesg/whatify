@@ -194,11 +194,12 @@ wss.on("connection", function(clientWebsocketRaw, req) {
 app.use(express.static("client"));
 
 app.get("/client", function(req, res) {
-    if (typeof access_token !== 'undefined') res.redirect("/");
+    if (typeof access_token === 'undefined') res.redirect("/");
     res.sendFile(path.join(__dirname + '/client/client.html'));
 });
 
 app.get('/', function(req, res) {
+    if (typeof access_token !== 'undefined') res.redirect("/client");
     var scopes = 'user-read-playback-state user-modify-playback-state user-read-currently-playing streaming app-remote-control';
     res.redirect('https://accounts.spotify.com/authorize' +
         '?response_type=code' +
@@ -218,17 +219,16 @@ app.get("/spotify/callback", function(req, res) {
         .send({ grant_type: 'authorization_code'})
         .send({ code: code})
         .send({ redirect_uri: redirect_uri})
-        .end((err, res) => {
+        .end((err, response) => {
             if (err) {
-                res.end(`<p>Something went wrong, <a href="/">please retry</a>.</p>`);
+                response.end(`<p>Something went wrong, <a href="/">please retry</a>.</p>`);
             }
 
-            access_token = res.body["access_token"];
-            refresh_token = res.body["refresh_token"];
-            console.log(res.body);
-        });
+            access_token = response.body["access_token"];
+            refresh_token = response.body["refresh_token"];
 
-    res.redirect("/client");
+            res.redirect("/client");
+        });
 });
     
 
