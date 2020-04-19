@@ -148,13 +148,6 @@ wss.on("connection", function(clientWebsocketRaw, req) {
                         whatsappChats.sort((a, b) => (a.lastInteraction < b.lastInteraction) ? 1 : -1);
                         if (whatsappChats.length > 25) whatsappChats = whatsappChats.slice(0, 24);
                         clientWebsocket.send({ type: "whatsapp_chats", message: whatsappChats, message_type: d.message_type, timestamp: d.timestamp });
-
-                        clientWebsocket.waitForMessage({
-                            condition: obj => obj.type == "chat_select",
-                            keepWhenHit: true
-                        }).then(message => {
-                            currentChatJid = whatsappJids[message.data.message];
-                        }).run();
                     }
                 } catch (err) {
                     //console.log(err.message);
@@ -184,12 +177,17 @@ wss.on("connection", function(clientWebsocketRaw, req) {
                 catch (err) {
                     //console.log(err.message);
                 }
-
-                clientWebsocket.send({ type: "whatsapp_message_received", message: d.message, message_type: d.message_type, timestamp: d.timestamp });
             }).run();
         }).catch(reason => {
             clientCallRequest.respond({ type: "error", reason: reason });
         })
+    }).run();
+
+    clientWebsocket.waitForMessage({
+        condition: obj => obj.type == "chat_select",
+        keepWhenHit: true
+    }).then(message => {
+        currentChatJid = whatsappJids[message.data.message];
     }).run();
 })
 
