@@ -141,6 +141,8 @@ wss.on("connection", function(clientWebsocketRaw, req) {
                 // find chats
                 try {
                     if (d.message[1]["type"] == "chat") {
+                        whatsappJids = {};
+                        whatsappChats = [];
                         d.message[2].forEach(e => {
                             whatsappChats.push({name: e[1].name, jid: e[1].jid, lastInteraction: e[1].t});
                             whatsappJids[e[1].name] = e[1].jid;
@@ -197,7 +199,6 @@ wss.on("connection", function(clientWebsocketRaw, req) {
                         {
                             superagent
                                 .post('https://api.spotify.com/v1/me/player/queue')
-                                .type('form')
                                 .accept('json')
                                 .set('Authorization', 'Bearer ' + access_token)
                                 .query({ uri: url })
@@ -213,6 +214,8 @@ wss.on("connection", function(clientWebsocketRaw, req) {
                 catch (err) {
                     //console.log(err.message);
                 }
+
+                clientWebsocket.send({ type: "whatsapp_message_received", message: d.message})
             }).run();
         }).catch(reason => {
             clientCallRequest.respond({ type: "error", reason: reason });
@@ -224,6 +227,7 @@ wss.on("connection", function(clientWebsocketRaw, req) {
         keepWhenHit: true
     }).then(message => {
         currentChatJid = whatsappJids[message.data.message];
+        backendWebsocket.send({type: "call", from: "api2backend", command: "backend-sendGroupMetadataRequest", jid: currentChatJid, whatsapp_instance_id: backendWebsocket.activeWhatsAppInstanceId});
     }).run();
 })
 

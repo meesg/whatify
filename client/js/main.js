@@ -155,6 +155,7 @@ $(document).ready(function() {
                             
                             let groups = whatsAppMessage.data.message;
 
+                            $('.dropdown-menu').html('');
                             groups.forEach(group => {
                                 $('.dropdown-menu').append(`<a class="dropdown-item chat">` + group.name + "</a>");
                             });

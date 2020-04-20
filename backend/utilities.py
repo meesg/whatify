@@ -6,8 +6,14 @@ import time;
 
 
 def eprint(*args, **kwargs):							# from https://stackoverflow.com/a/14981125
-	if 1 != 1:
-		print(*args, file=sys.stderr, **kwargs);
+	print(*args, file=sys.stderr, **kwargs);
+
+ogTimeStamp = -1
+def getOgTimestamp():
+	global ogTimeStamp
+	if ogTimeStamp == -1:
+		ogTimeStamp = int(time.time());
+	return ogTimeStamp
 
 def getTimestamp():
 	return int(time.time());

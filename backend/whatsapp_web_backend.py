@@ -22,8 +22,7 @@ sys.setdefaultencoding("utf-8");
 
 
 def eprint(*args, **kwargs):			# from https://stackoverflow.com/a/14981125
-    if 1 != 1:
-        print(*args, file=sys.stderr, **kwargs);
+    print(*args, file=sys.stderr, **kwargs);
 
 
 
@@ -92,6 +91,8 @@ class WhatsAppWeb(WebSocket):
                         currWhatsAppInstance.getLoginInfo(callback);
                     elif cmd == "backend-getConnectionInfo":
                         currWhatsAppInstance.getConnectionInfo(callback);
+                    elif cmd == "backend-sendGroupMetadataRequest":
+                        currWhatsAppInstance.sendGroupMetadataRequest(obj["jid"]);
                     elif cmd == "backend-disconnectWhatsApp":
                         currWhatsAppInstance.disconnect();
                         self.sendJSON({ "type": "resource_disconnected", "resource": "whatsapp", "resource_instance_id": obj["whatsapp_instance_id"] }, tag);

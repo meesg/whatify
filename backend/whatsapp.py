@@ -33,8 +33,6 @@ WHATSAPP_WEB_VERSION="0,4,2081"
 reload(sys);
 sys.setdefaultencoding("utf-8");
 
-
-
 def HmacSha256(key, sign):
     return hmac.new(key, sign, hashlib.sha256).digest();
 
@@ -240,17 +238,19 @@ class WhatsAppWebClient:
 
     def generateQRCode(self, callback=None):
         self.loginInfo["clientId"] = base64.b64encode(os.urandom(16));
-        messageTag = str(getTimestamp());
+        messageTag = str(getOgTimestamp());
         self.messageQueue[messageTag] = { "desc": "_login", "callback": callback };
         message = messageTag + ',["admin","init",['+ WHATSAPP_WEB_VERSION + '],["Chromium at ' + datetime.datetime.now().isoformat() + '","Chromium"],"' + self.loginInfo["clientId"] + '",true]';
         self.activeWs.send(message);
+        self.messageSentCount = self.messageSentCount + 1
+
 
     def restoreSession(self, callback=None):
-        messageTag = str(getTimestamp())
+        messageTag = str(getOgTimestamp())
         message = messageTag + ',["admin","init",['+ WHATSAPP_WEB_VERSION + '],["Chromium at ' + datetime.now().isoformat() + '","Chromium"],"' + self.loginInfo["clientId"] + '",true]'
         self.activeWs.send(message)
 
-        messageTag = str(getTimestamp())
+        messageTag = str(getOgTimestamp())
         self.messageQueue[messageTag] = {"desc": "_restoresession"}
         message = messageTag + ',["admin","login","' + self.connInfo["clientToken"] + '", "' + self.connInfo[
             "serverToken"] + '", "' + self.loginInfo["clientId"] + '", "takeover"]'
@@ -262,6 +262,13 @@ class WhatsAppWebClient:
     
     def getConnectionInfo(self, callback):
         callback["func"]({ "type": "connection_info", "data": self.connInfo }, callback);
+
+    def sendGroupMetadataRequest(self, jid):
+        messageTag = str(getOgTimestamp() % 1000) + '.--' + str(self.messageSentCount) + ','
+        self.messageSentCount = self.messageSentCount + 1
+        message = messageTag + ',["query", "GroupMetadata", "' + jid + '"]'
+        eprint(message)
+        self.activeWs.send(message)
     
     def sendTextMessage(self, number, text):
         messageId = "3EB0"+binascii.hexlify(Random.get_random_bytes(8)).upper()
